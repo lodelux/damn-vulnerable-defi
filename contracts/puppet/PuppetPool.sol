@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "../DamnValuableToken.sol";
+import "../../build-uniswap-v1/IUniswapV1Exchange.sol";
 
 /**
  * @title PuppetPool
@@ -54,7 +55,7 @@ contract PuppetPool is ReentrancyGuard {
     }
 
     function calculateDepositRequired(uint256 amount) public view returns (uint256) {
-        return amount * _computeOraclePrice() * DEPOSIT_FACTOR / 10 ** 18;
+        return amount * _computeOraclePrice() * DEPOSIT_FACTOR / 10 ** 18; 
     }
 
     function _computeOraclePrice() private view returns (uint256) {

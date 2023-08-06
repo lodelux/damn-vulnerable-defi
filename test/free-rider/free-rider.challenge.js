@@ -105,7 +105,21 @@ describe('[Challenge] Free Rider', function () {
     });
 
     it('Execution', async function () {
-        /** CODE YOUR SOLUTION HERE */
+    //    log token0.symbol and token1.symbol
+        const token0 = await uniswapPair.token0();
+        const token1 = await uniswapPair.token1();
+        const token0Symbol = await (await ethers.getContractAt('@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20', token0)).symbol();
+        const token1Symbol = await (await ethers.getContractAt('@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20', token1)).symbol();
+        console.log(token0, token1,marketplace.address, uniswapPair.address, devsContract.address);
+
+
+        const exploiterContract = await (await ethers.getContractFactory('FreeRiderExploit', player)).deploy(
+            marketplace.address,
+            uniswapPair.address,
+            devsContract.address
+        );
+
+        await exploiterContract.exploit();
     });
 
     after(async function () {

